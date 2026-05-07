@@ -17,6 +17,7 @@ import warp as wp
 from warp._src.codegen import get_full_arg_spec, make_full_qualified_name
 from warp._src.context import CudaMemcpyKind
 from warp._src.jax import get_jax_device
+from warp._src.logger import LOG_DEBUG, log_debug, log_error, log_warning
 from warp._src.types import (
     array_t,
     launch_bounds_t,
@@ -25,7 +26,6 @@ from warp._src.types import (
     type_size_in_bytes,
     type_to_warp,
 )
-from warp._src.utils import warn
 
 from .xla_ffi import *
 
@@ -448,7 +448,7 @@ class FfiKernel:
                 )
 
         except Exception as e:
-            print(traceback.format_exc())
+            log_error(traceback.format_exc())
             return create_ffi_error(
                 call_frame.contents.api, XLA_FFI_Error_Code.UNKNOWN, f"FFI callback error: {type(e).__name__}: {e}"
             )
@@ -1022,7 +1022,7 @@ class FfiCallable:
                         self.func(*arg_list)
 
         except Exception as e:
-            print(traceback.format_exc())
+            log_error(traceback.format_exc())
             return create_ffi_error(
                 call_frame.contents.api, XLA_FFI_Error_Code.UNKNOWN, f"FFI callback error: {type(e).__name__}: {e}"
             )
@@ -1101,23 +1101,25 @@ class FfiCallable:
         call_desc.output_staging_arrays = output_staging_arrays
         call_desc.static_staging_arrays = static_staging_arrays
 
-        if wp.config.verbose:
-            # print some stats
+        # print some stats at debug level
+        if wp.config.log_level <= LOG_DEBUG:
             total_input_size = 0
             for i in range(input_memcpy_count):
                 total_input_size += int(call_desc.input_memcpy_sizes[i])
             total_output_size = 0
             for i in range(output_memcpy_count):
                 total_output_size += int(call_desc.output_memcpy_sizes[i])
-            print("FFI graph staging stats:")
-            print(f"  input memcpy indices: {input_memcpy_indices}")
-            print(f"  output memcpy indices: {output_memcpy_indices}")
-            print(f"  input memcpy count: {input_memcpy_count}")
-            print(f"  output memcpy count: {output_memcpy_count}")
-            print(f"  total memcpy count: {input_memcpy_count + output_memcpy_count}")
-            print(f"  total input size: {total_input_size} bytes")
-            print(f"  total output size: {total_output_size} bytes")
-            print(f"  total size: {total_input_size + total_output_size} bytes")
+            log_debug(
+                f"FFI graph staging stats:\n"
+                f"  input memcpy indices: {input_memcpy_indices}\n"
+                f"  output memcpy indices: {output_memcpy_indices}\n"
+                f"  input memcpy count: {input_memcpy_count}\n"
+                f"  output memcpy count: {output_memcpy_count}\n"
+                f"  total memcpy count: {input_memcpy_count + output_memcpy_count}\n"
+                f"  total input size: {total_input_size} bytes\n"
+                f"  total output size: {total_output_size} bytes\n"
+                f"  total size: {total_input_size + total_output_size} bytes"
+            )
 
     @property
     def graph_cache_max(self) -> int | None:
@@ -1320,7 +1322,7 @@ def jax_kernel(
                 try:
                     gi.zero_()
                 except Exception as e:
-                    warn(f"Failed to zero gradient array: {e}", stacklevel=2)
+                    log_warning(f"Failed to zero gradient array: {e}", stacklevel=2)
                     raise e
 
         # The same _resolve_launch_dims() is used here so that the adjoint
@@ -1700,7 +1702,7 @@ def register_ffi_callback(name: str, func: Callable, graph_compatible: bool = Tr
                 func(inputs, outputs, attrs, ctx)
 
         except Exception as e:
-            print(traceback.format_exc())
+            log_error(traceback.format_exc())
             return create_ffi_error(
                 call_frame.contents.api, XLA_FFI_Error_Code.UNKNOWN, f"FFI callback error: {type(e).__name__}: {e}"
             )

@@ -33,6 +33,11 @@ from warp._src.coloring import graph_coloring_get_groups as graph_coloring_get_g
 from warp._src.rmm_allocator import AllocatorRmm as AllocatorRmm
 
 
+# category: Logging
+
+from warp._src.kit_logger import LoggerKit as LoggerKit
+
+
 # category: Misc
 
 from warp._src.utils import create_warp_function as create_warp_function

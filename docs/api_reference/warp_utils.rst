@@ -50,6 +50,15 @@ Allocators
 
    AllocatorRmm
 
+Logging
+-------
+
+.. autosummary::
+   :nosignatures:
+   :toctree: _generated
+
+   LoggerKit
+
 Misc
 ----
 

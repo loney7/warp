@@ -71,7 +71,11 @@ This setting can be overridden at the module level by setting the ``"optimizatio
 """
 
 verbose: bool = False
-"""Enable detailed logging during code generation and compilation."""
+"""Enable detailed logging during code generation and compilation.
+
+.. deprecated::
+    Use ``warp.config.log_level = warp.LOG_DEBUG`` instead.
+"""
 
 verbose_warnings: bool = False
 """Enable extended warning messages with source location information."""
@@ -79,7 +83,17 @@ verbose_warnings: bool = False
 quiet: bool = False
 """Disable Warp module initialization messages.
 
-Error messages and warnings remain unaffected.
+.. deprecated::
+    Use ``warp.config.log_level = warp.LOG_WARNING`` instead.
+"""
+
+log_level: int = 20
+"""Log level threshold for Warp's logging infrastructure.
+
+Messages below this level are suppressed. Use the ``LOG_DEBUG``, ``LOG_INFO``,
+``LOG_WARNING``, and ``LOG_ERROR`` constants from the ``warp`` module.
+
+Default is ``LOG_INFO`` (20).
 """
 
 verify_autograd_array_access: bool = False

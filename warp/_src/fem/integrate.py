@@ -48,9 +48,10 @@ from warp._src.fem.types import (
     make_free_sample,
 )
 from warp._src.fem.utils import type_zero_element
+from warp._src.logger import log_warning
 from warp._src.sparse import BsrMatrix, bsr_set_from_triplets, bsr_zeros
 from warp._src.types import is_array, type_length, type_repr, type_scalar_type, type_size, type_to_warp
-from warp._src.utils import array_cast, warn
+from warp._src.utils import array_cast
 
 __all__ = ["integrate", "interpolate"]
 
@@ -450,7 +451,7 @@ def _check_domain_operators(integrand: Integrand, domain: GeometryDomain, domain
     if (
         operator.lookup in domain_operators or operator.partition_lookup in domain_operators
     ) and not domain.supports_lookup(device):
-        warn(
+        log_warning(
             f"{integrand.name}: using lookup() operator on a '{domain.geometry.name}.{domain.element_kind.name}' domain that does not support it. "
             "If relevant, check that the geometry's BVH has been built for this device (see `Geometry.build_bvh()`, `Geometry.update_bvh()`)."
         )
@@ -1466,7 +1467,7 @@ def _launch_integrate_kernel(
             )
 
             if test.TAYLOR_DOF_COUNT == 0:
-                warn(
+                log_warning(
                     f"Test field is never evaluated in integrand '{integrand.name}', result will be zero",
                     category=UserWarning,
                     stacklevel=2,
@@ -1588,7 +1589,7 @@ def _launch_integrate_kernel(
         )
 
         if test.TAYLOR_DOF_COUNT * trial.TAYLOR_DOF_COUNT == 0:
-            warn(
+            log_warning(
                 f"Test and/or trial fields are never evaluated in integrand '{integrand.name}', result will be zero",
                 category=UserWarning,
                 stacklevel=2,
@@ -2745,7 +2746,7 @@ def _launch_interpolate_kernel(
     qp_index_count = quadrature.total_point_count()
 
     if qp_eval_count != qp_index_count and dest is not None:
-        warn(
+        log_warning(
             f"Quadrature used for interpolation of {integrand.name} has different number of evaluation and indexed points, this may lead to incorrect results",
             category=UserWarning,
             stacklevel=2,
@@ -2851,10 +2852,10 @@ def interpolate(
            when possible.
         dest_space: When interpolating at nodes, the function space that defines the degree of freedom basis.
           If `dest` is a :class:`DiscreteField`, or a :class:`FieldRestriction`, this will be inferred from the space of the field.
-        quadrature: (Deprecated) Equivalent to passing a :class:`Quadrature` to `at`. Will be removed in 1.13.
+        quadrature: (Deprecated) Equivalent to passing a :class:`Quadrature` to `at`. Will be removed in 1.14.
         dim: If `dest` is an array or ``None``, and `at` is a :class:`GeometryDomain`, the number of arbitrary samples at which to interpolate.
            In this case, the ``Sample`` passed to the `integrand` will be invalid, but the sample point index ``s.qp_index`` can be used to define custom interpolation logic.
-        domain: (Deprecated) Equivalent to passing a :class:`Domain` to `at`. Will be removed in 1.13.
+        domain: (Deprecated) Equivalent to passing a :class:`Domain` to `at`. Will be removed in 1.14.
         fields: Discrete fields to be passed to the integrand. Keys in the dictionary must match integrand parameters names.
         values: Additional variable values to be passed to the integrand, can be of any type accepted by warp kernel launches. Keys in the dictionary must match integrand parameter names.
         reduction: Reduction method to be used for interpolation at nodes shared by several elements. Can be one of "weighted_average", "mean", "sum", "max", "min", "first".
@@ -2885,14 +2886,16 @@ def interpolate(
 
     # deprecation warnings
     if quadrature is not None:
-        warn(
+        log_warning(
             "The `quadrature` argument of `fem.interpolate` is deprecated and will be removed in 1.14. Please use `at` instead.",
-            DeprecationWarning,
+            category=DeprecationWarning,
+            stacklevel=2,
         )
     if domain is not None:
-        warn(
+        log_warning(
             "The `domain` argument of `fem.interpolate` is deprecated and will be removed in 1.14. Please use `at` instead.",
-            DeprecationWarning,
+            category=DeprecationWarning,
+            stacklevel=2,
         )
 
     arguments = _parse_integrand_arguments(integrand, fields)

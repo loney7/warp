@@ -31,6 +31,7 @@ API
    lineinfo
    llvm_cuda
    load_module_max_workers
+   log_level
    max_unroll
    mode
    optimization_level

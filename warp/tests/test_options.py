@@ -50,7 +50,7 @@ def test_options_backward_1(test, device):
     with tape:
         wp.launch(scale, dim=1, inputs=[x, y], device=device)
 
-    with contextlib.redirect_stdout(io.StringIO()) as f:
+    with contextlib.redirect_stderr(io.StringIO()) as f:
         tape.backward(y)
 
     expected = f"Warp UserWarning: Running the tape backwards may produce incorrect gradients because recorded kernel {scale.key} is defined in a module with the option 'enable_backward=False' set.\n"
@@ -97,7 +97,7 @@ def test_options_backward_4(test, device):
     with tape:
         wp.launch(scale_2, dim=1, inputs=[x, y], device=device)
 
-    with contextlib.redirect_stdout(io.StringIO()) as f:
+    with contextlib.redirect_stderr(io.StringIO()) as f:
         tape.backward(y)
 
     expected = f"Warp UserWarning: Running the tape backwards may produce incorrect gradients because recorded kernel {scale_2.key} is configured with the option 'enable_backward=False'.\n"
@@ -256,25 +256,25 @@ class TestOptions(unittest.TestCase):
         old_flags = wp.config.cpu_compiler_flags
 
         # Clear once-per-session warning dedup so the warning fires in this test
-        saved_warnings = wp._src.utils.warnings_seen.copy()
-        wp._src.utils.warnings_seen.clear()
+        saved_warnings = wp._src.logger._warnings_seen.copy()
+        wp._src.logger._warnings_seen.clear()
 
         try:
             wp.config.cpu_compiler_flags = None  # resolves to -march=native
             module.hashers.clear()
 
-            stdout_capture = io.StringIO()
-            with contextlib.redirect_stdout(stdout_capture):
+            stderr_capture = io.StringIO()
+            with contextlib.redirect_stderr(stderr_capture):
                 with tempfile.TemporaryDirectory() as tmpdir:
                     wp.compile_aot_module(module, device="cpu", module_dir=tmpdir)
 
-            output = stdout_capture.getvalue()
+            output = stderr_capture.getvalue()
             self.assertIn("-march=native", output)
             self.assertIn("cpu_compiler_flags=''", output)
         finally:
             wp.config.cpu_compiler_flags = old_flags
             module.hashers.clear()
-            wp._src.utils.warnings_seen.update(saved_warnings)
+            wp._src.logger._warnings_seen.update(saved_warnings)
 
     def test_get_caller_module_name_error_message(self):
         """_get_caller_module_name should raise RuntimeError with a helpful message when all fallbacks fail."""

@@ -21,10 +21,25 @@
   gradients silently dropped through curl-noise force fields in
   differentiable simulations
   ([GH-1012](https://github.com/NVIDIA/warp/issues/1012)).
+- Add pluggable logging infrastructure: implement the `wp.Logger` protocol
+  (or use `wp.utils.LoggerKit` for Omniverse Kit hosts) and pass it to
+  `wp.set_logger()`, or scope it temporarily with `wp.ScopedLogger`.
+  `wp.config.log_level` controls the global verbosity threshold and can be
+  scoped temporarily with `wp.ScopedLogLevel`; all Python-side diagnostic
+  output now routes through the logger
+  ([GH-1315](https://github.com/NVIDIA/warp/issues/1315),
+  [GH-1434](https://github.com/NVIDIA/warp/issues/1434)).
 
 ### Removed
 
 ### Deprecated
+
+- Deprecate `warp.config.verbose` and `warp.config.quiet` in favor of
+  `warp.config.log_level`. Setting either flag continues to work during the
+  deprecation window and now emits a `DeprecationWarning` at runtime
+  initialization. `warp.config.verbose_warnings` is unaffected and continues to
+  control whether warning output includes the source location
+  ([GH-1315](https://github.com/NVIDIA/warp/issues/1315)).
 
 ### Changed
 
@@ -55,6 +70,8 @@
   ([GH-583](https://github.com/NVIDIA/warp/issues/583),
   [GH-248](https://github.com/NVIDIA/warp/issues/248),
   [GH-1174](https://github.com/NVIDIA/warp/issues/1174)).
+- Fix `warp.utils.warn()` overriding user warning filters, making deprecation warnings
+  unsuppressible via `warnings.filterwarnings()` ([GH-1315](https://github.com/NVIDIA/warp/issues/1315)).
 
 ### Documentation
 
