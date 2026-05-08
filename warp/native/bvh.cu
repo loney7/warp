@@ -7,6 +7,7 @@
 
 #include "bvh.h"
 #include "cuda_util.h"
+#include "error.h"
 #include "sort.h"
 
 #include <algorithm>
@@ -830,6 +831,15 @@ static inline void cubql_update_device_boxes(CuBQLBVH& bvh)
     );
 }
 
+static cuBQL::GpuMemoryResource& cubql_get_mem_resource()
+{
+    int ordinal = wp_cuda_context_get_device_ordinal(wp_cuda_context_get_current());
+    if (wp_cuda_device_is_mempool_supported(ordinal))
+        return cuBQL::defaultGpuMemResource();
+    static cuBQL::DeviceMemoryResource sync_resource;
+    return sync_resource;
+}
+
 void cubql_bvh_create_device(
     void* context, vec3* lowers, vec3* uppers, int num_items, int leaf_size, CuBQLBVH& bvh_device_on_host
 )
@@ -854,14 +864,27 @@ void cubql_bvh_create_device(
     bvh_device_on_host.boxes = wp_alloc_device(WP_CURRENT_CONTEXT, sizeof(cuBQL::box3f) * num_items);
     cubql_update_device_boxes(bvh_device_on_host);
 
-    cuBQL::bvh3f native;
-    cuBQL::BuildConfig build_config;
-    build_config.enableSAH();
-    build_config.makeLeafThreshold = leaf_size;
-    cuBQL::gpuBuilder(
-        native, reinterpret_cast<cuBQL::box3f*>(bvh_device_on_host.boxes), uint32_t(num_items), build_config
-    );
-    cubql_assign(bvh_device_on_host, native);
+    try {
+        cuBQL::bvh3f native;
+        cuBQL::BuildConfig build_config;
+        build_config.enableSAH();
+        build_config.makeLeafThreshold = leaf_size;
+        cuBQL::gpuBuilder(
+            native, reinterpret_cast<cuBQL::box3f*>(bvh_device_on_host.boxes), uint32_t(num_items), build_config, 0,
+            cubql_get_mem_resource()
+        );
+        cubql_assign(bvh_device_on_host, native);
+    } catch (const std::runtime_error& e) {
+        wp::set_error_string("Warp error: cuBQL BVH build failed: %s", e.what());
+        if (bvh_device_on_host.boxes) {
+            wp_free_device(WP_CURRENT_CONTEXT, bvh_device_on_host.boxes);
+            bvh_device_on_host.boxes = nullptr;
+        }
+        if (bvh_device_on_host.root) {
+            wp_free_device(WP_CURRENT_CONTEXT, bvh_device_on_host.root);
+            bvh_device_on_host.root = nullptr;
+        }
+    }
 }
 
 void cubql_bvh_destroy_device(CuBQLBVH& bvh)
@@ -870,7 +893,11 @@ void cubql_bvh_destroy_device(CuBQLBVH& bvh)
 
     if (bvh.nodes || bvh.primitive_indices) {
         cuBQL::bvh3f native = cubql_native_view(bvh);
-        cuBQL::cuda::free(native);
+        try {
+            cuBQL::cuda::free(native, 0, cubql_get_mem_resource());
+        } catch (const std::runtime_error& e) {
+            wp::set_error_string("Warp error: cuBQL BVH free failed: %s", e.what());
+        }
     }
 
     if (bvh.boxes) {
@@ -897,7 +924,11 @@ void cubql_bvh_refit_device(CuBQLBVH& bvh)
 
     cubql_update_device_boxes(bvh);
     cuBQL::bvh3f native = cubql_native_view(bvh);
-    cuBQL::cuda::refit(native, reinterpret_cast<cuBQL::box3f*>(bvh.boxes));
+    try {
+        cuBQL::cuda::refit(native, reinterpret_cast<cuBQL::box3f*>(bvh.boxes), 0, cubql_get_mem_resource());
+    } catch (const std::runtime_error& e) {
+        wp::set_error_string("Warp error: cuBQL BVH refit failed: %s", e.what());
+    }
 }
 
 void cubql_bvh_rebuild_device(CuBQLBVH& bvh)
@@ -906,7 +937,11 @@ void cubql_bvh_rebuild_device(CuBQLBVH& bvh)
 
     if (bvh.nodes || bvh.primitive_indices) {
         cuBQL::bvh3f old_native = cubql_native_view(bvh);
-        cuBQL::cuda::free(old_native);
+        try {
+            cuBQL::cuda::free(old_native, 0, cubql_get_mem_resource());
+        } catch (const std::runtime_error& e) {
+            wp::set_error_string("Warp error: cuBQL BVH free failed: %s", e.what());
+        }
     }
 
     if (bvh.num_items <= 0) {
@@ -926,12 +961,23 @@ void cubql_bvh_rebuild_device(CuBQLBVH& bvh)
     }
     cubql_update_device_boxes(bvh);
 
-    cuBQL::bvh3f native;
-    cuBQL::BuildConfig build_config;
-    build_config.enableSAH();
-    build_config.makeLeafThreshold = bvh.leaf_size;
-    cuBQL::gpuBuilder(native, reinterpret_cast<cuBQL::box3f*>(bvh.boxes), uint32_t(bvh.num_items), build_config);
-    cubql_assign(bvh, native);
+    try {
+        cuBQL::bvh3f native;
+        cuBQL::BuildConfig build_config;
+        build_config.enableSAH();
+        build_config.makeLeafThreshold = bvh.leaf_size;
+        cuBQL::gpuBuilder(
+            native, reinterpret_cast<cuBQL::box3f*>(bvh.boxes), uint32_t(bvh.num_items), build_config, 0,
+            cubql_get_mem_resource()
+        );
+        cubql_assign(bvh, native);
+    } catch (const std::runtime_error& e) {
+        wp::set_error_string("Warp error: cuBQL BVH rebuild failed: %s", e.what());
+        bvh.nodes = nullptr;
+        bvh.num_nodes = 0;
+        bvh.primitive_indices = nullptr;
+        bvh.num_prims = 0;
+    }
 }
 
 #else  // WP_DISABLE_CUBQL
