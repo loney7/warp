@@ -874,7 +874,7 @@ void cubql_bvh_create_device(
             cubql_get_mem_resource()
         );
         cubql_assign(bvh_device_on_host, native);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         wp::set_error_string("Warp error: cuBQL BVH build failed: %s", e.what());
         if (bvh_device_on_host.boxes) {
             wp_free_device(WP_CURRENT_CONTEXT, bvh_device_on_host.boxes);
@@ -895,7 +895,7 @@ void cubql_bvh_destroy_device(CuBQLBVH& bvh)
         cuBQL::bvh3f native = cubql_native_view(bvh);
         try {
             cuBQL::cuda::free(native, 0, cubql_get_mem_resource());
-        } catch (const std::runtime_error& e) {
+        } catch (const std::exception& e) {
             wp::set_error_string("Warp error: cuBQL BVH free failed: %s", e.what());
         }
     }
@@ -926,7 +926,7 @@ void cubql_bvh_refit_device(CuBQLBVH& bvh)
     cuBQL::bvh3f native = cubql_native_view(bvh);
     try {
         cuBQL::cuda::refit(native, reinterpret_cast<cuBQL::box3f*>(bvh.boxes), 0, cubql_get_mem_resource());
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         wp::set_error_string("Warp error: cuBQL BVH refit failed: %s", e.what());
     }
 }
@@ -939,7 +939,7 @@ void cubql_bvh_rebuild_device(CuBQLBVH& bvh)
         cuBQL::bvh3f old_native = cubql_native_view(bvh);
         try {
             cuBQL::cuda::free(old_native, 0, cubql_get_mem_resource());
-        } catch (const std::runtime_error& e) {
+        } catch (const std::exception& e) {
             wp::set_error_string("Warp error: cuBQL BVH free failed: %s", e.what());
         }
     }
@@ -971,12 +971,16 @@ void cubql_bvh_rebuild_device(CuBQLBVH& bvh)
             cubql_get_mem_resource()
         );
         cubql_assign(bvh, native);
-    } catch (const std::runtime_error& e) {
+    } catch (const std::exception& e) {
         wp::set_error_string("Warp error: cuBQL BVH rebuild failed: %s", e.what());
         bvh.nodes = nullptr;
         bvh.num_nodes = 0;
         bvh.primitive_indices = nullptr;
         bvh.num_prims = 0;
+        if (bvh.root) {
+            int root_index = -1;
+            wp_memcpy_h2d(WP_CURRENT_CONTEXT, bvh.root, &root_index, sizeof(int));
+        }
     }
 }
 
