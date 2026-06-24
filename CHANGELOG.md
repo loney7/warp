@@ -27,6 +27,19 @@
   `enable_mathdx_solver` config flag and module option (parity with `enable_mathdx_gemm`)
   to route these ops through the fallback when libmathdx is available
   ([GH-1402](https://github.com/NVIDIA/warp/issues/1402)).
+- Add mipmap (texture level-of-detail) support to `wp.Texture1D`, `wp.Texture2D`, and `wp.Texture3D` via the new
+  `num_mip_levels` and `mip_filter_mode` constructor parameters, and allow `wp.texture_sample()` to accept an optional
+  trailing `lod` argument for controlling sampled detail level ([GH-1409](https://github.com/NVIDIA/warp/issues/1409)).
+- Add optional CMake source builds for `warp` and `warp-clang` with Packman-managed dependencies and support for
+  parallel and incremental developer builds ([GH-1495](https://github.com/NVIDIA/warp/issues/1495)).
+- Extend AddressSanitizer support to JIT-compiled CPU kernels: when `warp-clang` is built with `--sanitize=address`, CPU
+  kernels are automatically instrumented and share the host's single in-process ASan runtime, so out-of-bounds accesses
+  into a `wp.array` are reported as `heap-buffer-overflow` ([GH-1387](https://github.com/NVIDIA/warp/issues/1387)).
+- Extend `wp.utils.array_scan()` to 64-bit scalar and vector types, and extend `wp.utils.radix_sort_pairs()` to 32- and
+  64-bit signed, unsigned, and floating-point keys with 4- or 8-byte values
+  ([GH-1538](https://github.com/NVIDIA/warp/issues/1538)).
+- Add support for running JAX FFI callbacks on the CPU (Host) platform in addition to CUDA
+  ([GH-1446](https://github.com/NVIDIA/warp/issues/1446)).
 
 ### Removed
 
