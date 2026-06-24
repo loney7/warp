@@ -519,6 +519,19 @@ differentiable simulations
 <code class="docutils literal notranslate"><span class="pre">enable_mathdx_solver</span></code> config flag and module option (parity with <code class="docutils literal notranslate"><span class="pre">enable_mathdx_gemm</span></code>)
 to route these ops through the fallback when libmathdx is available
 (<a class="reference external" href="https://github.com/NVIDIA/warp/issues/1402">GH-1402</a>).</p></li>
+<li><p>Add mipmap (texture level-of-detail) support to <code class="docutils literal notranslate"><span class="pre">wp.Texture1D</span></code>, <code class="docutils literal notranslate"><span class="pre">wp.Texture2D</span></code>, and <code class="docutils literal notranslate"><span class="pre">wp.Texture3D</span></code> via the new
+<code class="docutils literal notranslate"><span class="pre">num_mip_levels</span></code> and <code class="docutils literal notranslate"><span class="pre">mip_filter_mode</span></code> constructor parameters, and allow <code class="docutils literal notranslate"><span class="pre">wp.texture_sample()</span></code> to accept an optional
+trailing <code class="docutils literal notranslate"><span class="pre">lod</span></code> argument for controlling sampled detail level (<a class="reference external" href="https://github.com/NVIDIA/warp/issues/1409">GH-1409</a>).</p></li>
+<li><p>Add optional CMake source builds for <code class="docutils literal notranslate"><span class="pre">warp</span></code> and <code class="docutils literal notranslate"><span class="pre">warp-clang</span></code> with Packman-managed dependencies and support for
+parallel and incremental developer builds (<a class="reference external" href="https://github.com/NVIDIA/warp/issues/1495">GH-1495</a>).</p></li>
+<li><p>Extend AddressSanitizer support to JIT-compiled CPU kernels: when <code class="docutils literal notranslate"><span class="pre">warp-clang</span></code> is built with <code class="docutils literal notranslate"><span class="pre">--sanitize=address</span></code>, CPU
+kernels are automatically instrumented and share the host’s single in-process ASan runtime, so out-of-bounds accesses
+into a <code class="docutils literal notranslate"><span class="pre">wp.array</span></code> are reported as <code class="docutils literal notranslate"><span class="pre">heap-buffer-overflow</span></code> (<a class="reference external" href="https://github.com/NVIDIA/warp/issues/1387">GH-1387</a>).</p></li>
+<li><p>Extend <code class="docutils literal notranslate"><span class="pre">wp.utils.array_scan()</span></code> to 64-bit scalar and vector types, and extend <code class="docutils literal notranslate"><span class="pre">wp.utils.radix_sort_pairs()</span></code> to 32- and
+64-bit signed, unsigned, and floating-point keys with 4- or 8-byte values
+(<a class="reference external" href="https://github.com/NVIDIA/warp/issues/1538">GH-1538</a>).</p></li>
+<li><p>Add support for running JAX FFI callbacks on the CPU (Host) platform in addition to CUDA
+(<a class="reference external" href="https://github.com/NVIDIA/warp/issues/1446">GH-1446</a>).</p></li>
 </ul>
 </section>
 <section id="removed">
