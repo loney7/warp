@@ -35,6 +35,8 @@
   Grouped BVHs/meshes and mesh winding-number queries remain unsupported. ([GH-1467](https://github.com/NVIDIA/warp/issues/1467))
 - Add a `cluster_dim` option to `@wp.kernel` and a `wp.get_cuda_max_cluster_dim()` query helper for using CUDA Thread
   Block Clusters from `@wp.func_native` code ([GH-1401](https://github.com/NVIDIA/warp/issues/1401)).
+- Add support for running JAX FFI callbacks on the CPU (Host) platform in addition to CUDA
+  ([GH-1446](https://github.com/NVIDIA/warp/issues/1446)).
 
 ### Removed
 
